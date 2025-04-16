@@ -31,13 +31,13 @@ class TrussGUI(QMainWindow):
     def create_table_toolbar(self, table, delete_callback):
         toolbar = QToolBar()
         if delete_callback is not None:
-            delete_btn = QPushButton("Delete Selected")
+            delete_btn = QPushButton("Deletar Selecionado")
             delete_btn.clicked.connect(delete_callback)
             toolbar.addWidget(delete_btn)
         return toolbar
 
     def initUI(self):
-        self.setWindowTitle('Truss Analysis')
+        self.setWindowTitle("Análise de Treliças")
         self.setGeometry(100, 100, 1200, 800)
 
         # Create main widget and layout
@@ -53,11 +53,11 @@ class TrussGUI(QMainWindow):
         file_group = QWidget()
         file_layout = QHBoxLayout(file_group)
         
-        save_btn = QPushButton('Save')
+        save_btn = QPushButton('Salvar')
         save_btn.clicked.connect(self.save_structure)
         file_layout.addWidget(save_btn)
         
-        load_btn = QPushButton('Load')
+        load_btn = QPushButton('Carregar')
         load_btn.clicked.connect(self.load_structure)
         file_layout.addWidget(load_btn)
         
@@ -73,7 +73,7 @@ class TrussGUI(QMainWindow):
         # Create nodes table first
         self.nodes_table = QTableWidget()
         self.nodes_table.setColumnCount(4)
-        self.nodes_table.setHorizontalHeaderLabels(['Node', 'X', 'Y', 'Constraints'])
+        self.nodes_table.setHorizontalHeaderLabels(['Nó', 'X', 'Y', 'Restrições'])
         self.nodes_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.nodes_table.itemChanged.connect(self.on_node_edit)
         self.nodes_table.setSelectionBehavior(QTableWidget.SelectRows)
@@ -83,7 +83,7 @@ class TrussGUI(QMainWindow):
         nodes_toolbar = self.create_table_toolbar(self.nodes_table, self.delete_selected_nodes)
         nodes_layout.addWidget(nodes_toolbar)
         nodes_layout.addWidget(self.nodes_table)
-        self.tab_widget.addTab(nodes_tab, "Nodes")
+        self.tab_widget.addTab(nodes_tab, "Nós")
 
         # Elements tab
         elements_tab = QWidget()
@@ -92,7 +92,7 @@ class TrussGUI(QMainWindow):
         # Create elements table first
         self.elements_table = QTableWidget()
         self.elements_table.setColumnCount(4)
-        self.elements_table.setHorizontalHeaderLabels(['Element', 'Node 1', 'Node 2', 'L [mm]'])
+        self.elements_table.setHorizontalHeaderLabels(['Elemento', 'Nó 1', 'Nó 2', 'L [mm]'])
         self.elements_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.elements_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.elements_table.setSelectionMode(QTableWidget.ExtendedSelection)
@@ -101,7 +101,7 @@ class TrussGUI(QMainWindow):
         elements_toolbar = self.create_table_toolbar(self.elements_table, self.delete_selected_elements)
         elements_layout.addWidget(elements_toolbar)
         elements_layout.addWidget(self.elements_table)
-        self.tab_widget.addTab(elements_tab, "Elements")
+        self.tab_widget.addTab(elements_tab, "Elementos")
 
         # Loads tab
         loads_tab = QWidget()
@@ -110,7 +110,7 @@ class TrussGUI(QMainWindow):
         # Create loads table first
         self.loads_table = QTableWidget()
         self.loads_table.setColumnCount(4)
-        self.loads_table.setHorizontalHeaderLabels(['Node', 'Fx', 'Fy', 'Resultant'])
+        self.loads_table.setHorizontalHeaderLabels(['Nó', 'Fx', 'Fy', 'Resultante'])
         self.loads_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.loads_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.loads_table.setSelectionMode(QTableWidget.ExtendedSelection)
@@ -119,7 +119,7 @@ class TrussGUI(QMainWindow):
         loads_toolbar = self.create_table_toolbar(self.loads_table, self.delete_selected_loads)
         loads_layout.addWidget(loads_toolbar)
         loads_layout.addWidget(self.loads_table)
-        self.tab_widget.addTab(loads_tab, "Loads")
+        self.tab_widget.addTab(loads_tab, "Cargas")
 
         # Properties tab
         properties_tab = QWidget()
@@ -128,7 +128,7 @@ class TrussGUI(QMainWindow):
         # Create properties table first
         self.properties_table = QTableWidget()
         self.properties_table.setColumnCount(4)
-        self.properties_table.setHorizontalHeaderLabels(['Property', 'Value', 'Unit', 'Description'])
+        self.properties_table.setHorizontalHeaderLabels(['Propriedade', 'Valor', 'Unidade', 'Descrição'])
         self.properties_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.properties_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.properties_table.setSelectionMode(QTableWidget.ExtendedSelection)
@@ -137,27 +137,27 @@ class TrussGUI(QMainWindow):
         properties_toolbar = self.create_table_toolbar(self.properties_table, None)
         properties_layout.addWidget(properties_toolbar)
         properties_layout.addWidget(self.properties_table)
-        self.tab_widget.addTab(properties_tab, "Properties")
+        self.tab_widget.addTab(properties_tab, "Propriedades")
 
         left_layout.addWidget(self.tab_widget)
         
         # Add node button
-        add_node_btn = QPushButton('Add Node')
+        add_node_btn = QPushButton('Adicionar Nó')
         add_node_btn.clicked.connect(self.add_node_mode)
         left_layout.addWidget(add_node_btn)
 
         # Add element button
-        add_element_btn = QPushButton('Add Element')
+        add_element_btn = QPushButton('Adicionar Elemento')
         add_element_btn.clicked.connect(self.add_element_mode)
         left_layout.addWidget(add_element_btn)
 
         # Fix node button
-        fix_node_btn = QPushButton('Fix Node')
+        fix_node_btn = QPushButton('Fixar Nó')
         fix_node_btn.clicked.connect(self.fix_node_mode)
         left_layout.addWidget(fix_node_btn)
 
         # Add load button
-        add_load_btn = QPushButton('Add Load')
+        add_load_btn = QPushButton('Adicionar Carga')
         add_load_btn.clicked.connect(self.add_load_mode)
         left_layout.addWidget(add_load_btn)
 
@@ -190,7 +190,7 @@ class TrussGUI(QMainWindow):
         left_layout.addWidget(material_group)
 
         # Solve button
-        solve_btn = QPushButton('Solve')
+        solve_btn = QPushButton('Resolver')
         solve_btn.clicked.connect(self.solve)
         left_layout.addWidget(solve_btn)
 
@@ -198,15 +198,15 @@ class TrussGUI(QMainWindow):
         zoom_group = QWidget()
         zoom_layout = QVBoxLayout(zoom_group)
         
-        zoom_in_btn = QPushButton('Zoom In')
+        zoom_in_btn = QPushButton('Zoom +')
         zoom_in_btn.clicked.connect(self.zoom_in)
         zoom_layout.addWidget(zoom_in_btn)
         
-        zoom_out_btn = QPushButton('Zoom Out')
+        zoom_out_btn = QPushButton('Zoom -')
         zoom_out_btn.clicked.connect(self.zoom_out)
         zoom_layout.addWidget(zoom_out_btn)
         
-        reset_zoom_btn = QPushButton('Reset Zoom')
+        reset_zoom_btn = QPushButton('Resetar Zoom')
         reset_zoom_btn.clicked.connect(self.reset_zoom)
         zoom_layout.addWidget(reset_zoom_btn)
         
@@ -565,13 +565,13 @@ class TrussGUI(QMainWindow):
             
             # Show results in a message box
             msg = QMessageBox()
-            msg.setWindowTitle("Analysis Results")
-            msg.setText("Analysis completed successfully!")
-            msg.setInformativeText(f"Maximum displacement: {np.max(np.abs(displacements)):.4f} mm\n"
-                                 f"Maximum element force: {np.max(np.abs(forces)):.2f} N")
+            msg.setWindowTitle("Resultados da Análise")
+            msg.setText("Análise concluída com sucesso!")
+            msg.setInformativeText(f"Deslocamento máximo: {np.max(np.abs(displacements)):.4f} mm\n"
+                                 f"Força máxima no elemento: {np.max(np.abs(forces)):.2f} N")
             msg.exec_()
         except Exception as e:
-            QMessageBox.critical(self, "Error", f"Analysis failed: {str(e)}")
+            QMessageBox.critical(self, "Erro", f"Falha na análise: {str(e)}")
 
     def update_plot(self, displacements=None, forces=None):
         self.ax.clear()
@@ -808,26 +808,26 @@ class TrussGUI(QMainWindow):
             self.update_tables()
 
     def save_structure(self):
-        filename, _ = QFileDialog.getSaveFileName(self, 'Save Structure', '', 'JSON Files (*.json);;All Files (*)')
+        filename, _ = QFileDialog.getSaveFileName(self, 'Salvar Estrutura', '', 'Arquivos JSON (*.json);;Todos os Arquivos (*)')
         if filename:
             try:
                 if not filename.endswith('.json'):
                     filename += '.json'
                 self.truss.save_to_file(filename)
-                QMessageBox.information(self, "Success", "Structure saved successfully!")
+                QMessageBox.information(self, "Sucesso", "Estrutura salva com sucesso!")
             except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to save structure: {str(e)}")
+                QMessageBox.critical(self, "Erro", f"Falha ao salvar a estrutura: {str(e)}")
 
     def load_structure(self):
-        filename, _ = QFileDialog.getOpenFileName(self, 'Load Structure', '', 'JSON Files (*.json);;All Files (*)')
+        filename, _ = QFileDialog.getOpenFileName(self, 'Carregar Estrutura', '', 'Arquivos JSON (*.json);;Todos os Arquivos (*)')
         if filename:
             try:
                 self.truss.load_from_file(filename)
                 self.update_plot()
                 self.update_tables()
-                QMessageBox.information(self, "Success", "Structure loaded successfully!")
+                QMessageBox.information(self, "Sucesso", "Estrutura carregada com sucesso!")
             except Exception as e:
-                QMessageBox.critical(self, "Error", f"Failed to load structure: {str(e)}")
+                QMessageBox.critical(self, "Erro", f"Falha ao carregar a estrutura: {str(e)}")
 
     def get_element_info(self):
         """Get information about each element"""
@@ -846,71 +846,66 @@ class TrussGUI(QMainWindow):
         return info
 
     def on_property_edit(self, item):
-        """Handle property table edits"""
+        """Manipula a edição de propriedades"""
         try:
-            # Get the row and column of the edited item
             row = item.row()
             col = item.column()
 
-            # Only handle edits in the value column (column 1)
             if col != 1:
                 return
 
-            # Try to convert the value to float
             try:
                 new_value = float(item.text())
             except ValueError:
-                raise ValueError("Please enter a valid number")
+                raise ValueError("Por favor, insira um número válido")
 
-            # Handle different properties
-            if row == 0:  # Young's Modulus (E)
+            if row == 0:  # Módulo de Elasticidade (E)
                 if new_value <= 0:
-                    raise ValueError("Young's modulus must be positive")
+                    raise ValueError("O módulo de elasticidade deve ser positivo")
                 self.E_input.setValue(new_value)
                 self.update_material_properties()
-            elif row == 1:  # Cross Section Area (A)
+            elif row == 1:  # Área da Seção Transversal (A)
                 if new_value <= 0:
-                    raise ValueError("Cross section area must be positive")
+                    raise ValueError("A área da seção transversal deve ser positiva")
                 self.A_input.setValue(new_value)
                 self.update_material_properties()
-            elif row == 2:  # Distortion Scale
+            elif row == 2:  # Escala de Distorção
                 if new_value <= 0:
-                    raise ValueError("Scale must be positive")
+                    raise ValueError("A escala deve ser positiva")
                 self.distortion_scale = new_value
                 if hasattr(self.truss, 'displacements') and self.truss.displacements is not None:
                     self.update_plot(self.truss.displacements, self.truss.forces)
-            elif row >= 3 and row <= 6:  # Chart limits
+            elif row >= 3 and row <= 6:  # Limites do gráfico
                 xlim = list(self.ax.get_xlim())
                 ylim = list(self.ax.get_ylim())
                 
-                if row == 3:  # Chart Start X
+                if row == 3:  # Início X
                     if new_value >= xlim[1]:
-                        raise ValueError("Start X must be less than End X")
+                        raise ValueError("O início X deve ser menor que o fim X")
                     xlim[0] = new_value
-                elif row == 4:  # Chart Start Y
+                elif row == 4:  # Início Y
                     if new_value >= ylim[1]:
-                        raise ValueError("Start Y must be less than End Y")
+                        raise ValueError("O início Y deve ser menor que o fim Y")
                     ylim[0] = new_value
-                elif row == 5:  # Chart End X
+                elif row == 5:  # Fim X
                     if new_value <= xlim[0]:
-                        raise ValueError("End X must be greater than Start X")
+                        raise ValueError("O fim X deve ser maior que o início X")
                     xlim[1] = new_value
-                elif row == 6:  # Chart End Y
+                elif row == 6:  # Fim Y
                     if new_value <= ylim[0]:
-                        raise ValueError("End Y must be greater than Start Y")
+                        raise ValueError("O fim Y deve ser maior que o início Y")
                     ylim[1] = new_value
                 
                 self.ax.set_xlim(xlim)
                 self.ax.set_ylim(ylim)
                 self.canvas.draw()
 
-            # Format the number nicely in the table
             item.setText(f"{new_value:.2f}")
             item.setTextAlignment(Qt.AlignCenter)
 
         except Exception as e:
-            QMessageBox.critical(self, "Error", str(e))
-            self.update_tables()  # Revert to previous values
+            QMessageBox.critical(self, "Erro", str(e))
+            self.update_tables()
 
     def update_material_properties(self):
         """Update E and A for all elements when these values change"""
