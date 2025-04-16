@@ -3,7 +3,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                             QHBoxLayout, QPushButton, QLabel, QDoubleSpinBox,
                             QSpinBox, QComboBox, QMessageBox, QTabWidget,
                             QTableWidget, QTableWidgetItem, QHeaderView, QToolBar,
-                            QFileDialog)
+                            QFileDialog, QDialog, QDialogButtonBox)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QIcon
 import matplotlib.pyplot as plt
@@ -91,8 +91,8 @@ class TrussGUI(QMainWindow):
         
         # Create elements table first
         self.elements_table = QTableWidget()
-        self.elements_table.setColumnCount(4)
-        self.elements_table.setHorizontalHeaderLabels(['Elemento', 'Nó 1', 'Nó 2', 'L [mm]'])
+        self.elements_table.setColumnCount(6)
+        self.elements_table.setHorizontalHeaderLabels(['Elemento', 'Nó 1', 'Nó 2', 'L [mm]', 'E [MPa]', 'A [mm²]'])
         self.elements_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.elements_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.elements_table.setSelectionMode(QTableWidget.ExtendedSelection)
@@ -165,27 +165,16 @@ class TrussGUI(QMainWindow):
         material_group = QWidget()
         material_layout = QVBoxLayout(material_group)
         
-        # Young's modulus
-        E_layout = QHBoxLayout()
-        E_label = QLabel('E (MPa):')
-        self.E_input = QDoubleSpinBox()
-        self.E_input.setRange(0, 1000000)
-        self.E_input.setValue(210000)  # Steel
-        self.E_input.valueChanged.connect(self.update_material_properties)
-        E_layout.addWidget(E_label)
-        E_layout.addWidget(self.E_input)
-        material_layout.addLayout(E_layout)
-
-        # Cross-sectional area
-        A_layout = QHBoxLayout()
-        A_label = QLabel('A (mm²):')
-        self.A_input = QDoubleSpinBox()
-        self.A_input.setRange(0, 10000)
-        self.A_input.setValue(100)
-        self.A_input.valueChanged.connect(self.update_material_properties)
-        A_layout.addWidget(A_label)
-        A_layout.addWidget(self.A_input)
-        material_layout.addLayout(A_layout)
+        # Distortion scale
+        scale_layout = QHBoxLayout()
+        scale_label = QLabel('Escala de Distorção:')
+        self.scale_input = QDoubleSpinBox()
+        self.scale_input.setRange(0, 1000)
+        self.scale_input.setValue(100)
+        self.scale_input.valueChanged.connect(self.update_distortion_scale)
+        scale_layout.addWidget(scale_label)
+        scale_layout.addWidget(self.scale_input)
+        material_layout.addLayout(scale_layout)
 
         left_layout.addWidget(material_group)
 
@@ -238,6 +227,7 @@ class TrussGUI(QMainWindow):
     def update_tables(self):
         # Temporarily disconnect the itemChanged signal to prevent recursive updates
         self.nodes_table.itemChanged.disconnect(self.on_node_edit)
+        self.elements_table.itemChanged.disconnect(self.on_element_edit) if self.elements_table.receivers(self.elements_table.itemChanged) > 0 else None
         
         # Update nodes table
         self.nodes_table.setRowCount(len(self.truss.nodes))
@@ -285,12 +275,26 @@ class TrussGUI(QMainWindow):
         for i, element in enumerate(self.truss.elements):
             element.calculate_properties(self.truss.nodes)
             
-            # Make all items non-editable
+            # Make element number, nodes and length non-editable
             for col, value in enumerate([i, element.node1, element.node2, f"{element.L:.2f}"]):
                 item = QTableWidgetItem(str(value))
                 item.setFlags(item.flags() & ~Qt.ItemIsEditable)
                 item.setTextAlignment(Qt.AlignCenter)
                 self.elements_table.setItem(i, col, item)
+            
+            # Make E and A editable
+            E_item = QTableWidgetItem(f"{element.E:.2f}")
+            E_item.setFlags(E_item.flags() | Qt.ItemIsEditable)
+            E_item.setTextAlignment(Qt.AlignCenter)
+            self.elements_table.setItem(i, 4, E_item)
+            
+            A_item = QTableWidgetItem(f"{element.A:.2f}")
+            A_item.setFlags(A_item.flags() | Qt.ItemIsEditable)
+            A_item.setTextAlignment(Qt.AlignCenter)
+            self.elements_table.setItem(i, 5, A_item)
+
+        # Connect the itemChanged signal for elements table
+        self.elements_table.itemChanged.connect(self.on_element_edit)
 
         # Update loads table
         load_nodes = set()
@@ -312,44 +316,27 @@ class TrussGUI(QMainWindow):
                 self.loads_table.setItem(i, col, item)
 
         # Update properties table
-        self.properties_table.setRowCount(7)  # Increased for E and A
+        self.properties_table.setRowCount(5)  # 1 for scale + 4 for chart limits
         
-        # Material properties (editable)
-        E_item = QTableWidgetItem(str(self.E_input.value()))
-        E_item.setFlags(E_item.flags() | Qt.ItemIsEditable)
-        E_item.setTextAlignment(Qt.AlignCenter)
-        self.properties_table.setItem(0, 0, QTableWidgetItem("Young's Modulus (E)"))
-        self.properties_table.setItem(0, 1, E_item)
-        self.properties_table.setItem(0, 2, QTableWidgetItem("MPa"))
-        self.properties_table.setItem(0, 3, QTableWidgetItem("Material stiffness"))
-
-        A_item = QTableWidgetItem(str(self.A_input.value()))
-        A_item.setFlags(A_item.flags() | Qt.ItemIsEditable)
-        A_item.setTextAlignment(Qt.AlignCenter)
-        self.properties_table.setItem(1, 0, QTableWidgetItem("Cross Section Area (A)"))
-        self.properties_table.setItem(1, 1, A_item)
-        self.properties_table.setItem(1, 2, QTableWidgetItem("mm²"))
-        self.properties_table.setItem(1, 3, QTableWidgetItem("Element cross-sectional area"))
-
         # Distortion scale (editable)
-        scale_item = QTableWidgetItem(str(self.distortion_scale))
+        scale_item = QTableWidgetItem(str(self.scale_input.value()))
         scale_item.setFlags(scale_item.flags() | Qt.ItemIsEditable)
         scale_item.setTextAlignment(Qt.AlignCenter)
-        self.properties_table.setItem(2, 0, QTableWidgetItem("Distortion Scale"))
-        self.properties_table.setItem(2, 1, scale_item)
-        self.properties_table.setItem(2, 2, QTableWidgetItem(""))
-        self.properties_table.setItem(2, 3, QTableWidgetItem("Scale factor for displacement visualization"))
+        self.properties_table.setItem(0, 0, QTableWidgetItem("Escala de Distorção"))
+        self.properties_table.setItem(0, 1, scale_item)
+        self.properties_table.setItem(0, 2, QTableWidgetItem(""))
+        self.properties_table.setItem(0, 3, QTableWidgetItem("Fator de escala para visualização dos deslocamentos"))
 
         # Chart limits (editable)
-        for i, (name, value, unit, desc) in enumerate([
-            ("Chart Start X", self.ax.get_xlim()[0], "m", "Leftmost position of the chart"),
-            ("Chart Start Y", self.ax.get_ylim()[0], "m", "Bottommost position of the chart"),
-            ("Chart End X", self.ax.get_xlim()[1], "m", "Rightmost position of the chart"),
-            ("Chart End Y", self.ax.get_ylim()[1], "m", "Topmost position of the chart")
-        ], 3):
-            # Make property name editable
+        for i, (name, value, unit, description) in enumerate([
+            ("Início X", self.ax.get_xlim()[0], "m", "Posição mais à esquerda do gráfico"),
+            ("Início Y", self.ax.get_ylim()[0], "m", "Posição mais abaixo do gráfico"),
+            ("Fim X", self.ax.get_xlim()[1], "m", "Posição mais à direita do gráfico"),
+            ("Fim Y", self.ax.get_ylim()[1], "m", "Posição mais acima do gráfico")
+        ], 1):
+            # Make property name non-editable
             name_item = QTableWidgetItem(name)
-            name_item.setFlags(name_item.flags() | Qt.ItemIsEditable)
+            name_item.setFlags(name_item.flags() & ~Qt.ItemIsEditable)
             name_item.setTextAlignment(Qt.AlignCenter)
             self.properties_table.setItem(i, 0, name_item)
             
@@ -359,15 +346,15 @@ class TrussGUI(QMainWindow):
             value_item.setTextAlignment(Qt.AlignCenter)
             self.properties_table.setItem(i, 1, value_item)
             
-            # Make unit editable
+            # Make unit non-editable
             unit_item = QTableWidgetItem(unit)
-            unit_item.setFlags(unit_item.flags() | Qt.ItemIsEditable)
+            unit_item.setFlags(unit_item.flags() & ~Qt.ItemIsEditable)
             unit_item.setTextAlignment(Qt.AlignCenter)
             self.properties_table.setItem(i, 2, unit_item)
             
-            # Make description editable
-            desc_item = QTableWidgetItem(desc)
-            desc_item.setFlags(desc_item.flags() | Qt.ItemIsEditable)
+            # Make description non-editable
+            desc_item = QTableWidgetItem(description)
+            desc_item.setFlags(desc_item.flags() & ~Qt.ItemIsEditable)
             desc_item.setTextAlignment(Qt.AlignCenter)
             self.properties_table.setItem(i, 3, desc_item)
         
@@ -435,9 +422,42 @@ class TrussGUI(QMainWindow):
         return node_id
 
     def add_element(self, node1, node2):
-        element_id = self.truss.add_element(node1, node2, self.E_input.value(), self.A_input.value())
-        self.update_tables()
-        return element_id
+        # Create dialog to input E and A
+        dialog = QDialog(self)
+        dialog.setWindowTitle('Propriedades do Elemento')
+        layout = QVBoxLayout(dialog)
+
+        # Young's modulus
+        E_layout = QHBoxLayout()
+        E_label = QLabel('E (MPa):')
+        E_input = QDoubleSpinBox()
+        E_input.setRange(0, 1000000)
+        E_input.setValue(70000)  # Default value
+        E_layout.addWidget(E_label)
+        E_layout.addWidget(E_input)
+        layout.addLayout(E_layout)
+
+        # Cross-sectional area
+        A_layout = QHBoxLayout()
+        A_label = QLabel('A (mm²):')
+        A_input = QDoubleSpinBox()
+        A_input.setRange(0, 10000)
+        A_input.setValue(100)  # Default value
+        A_layout.addWidget(A_label)
+        A_layout.addWidget(A_input)
+        layout.addLayout(A_layout)
+
+        # Buttons
+        button_box = QDialogButtonBox(QDialogButtonBox.Ok | QDialogButtonBox.Cancel)
+        button_box.accepted.connect(dialog.accept)
+        button_box.rejected.connect(dialog.reject)
+        layout.addWidget(button_box)
+
+        if dialog.exec_() == QDialog.Accepted:
+            element_id = self.truss.add_element(node1, node2, E_input.value(), A_input.value())
+            self.update_tables()
+            return element_id
+        return None
 
     def apply_load(self, node, fx, fy):
         self.truss.apply_load(node, fx, fy)
@@ -859,39 +879,29 @@ class TrussGUI(QMainWindow):
             except ValueError:
                 raise ValueError("Por favor, insira um número válido")
 
-            if row == 0:  # Módulo de Elasticidade (E)
-                if new_value <= 0:
-                    raise ValueError("O módulo de elasticidade deve ser positivo")
-                self.E_input.setValue(new_value)
-                self.update_material_properties()
-            elif row == 1:  # Área da Seção Transversal (A)
-                if new_value <= 0:
-                    raise ValueError("A área da seção transversal deve ser positiva")
-                self.A_input.setValue(new_value)
-                self.update_material_properties()
-            elif row == 2:  # Escala de Distorção
+            if row == 0:  # Distortion scale
                 if new_value <= 0:
                     raise ValueError("A escala deve ser positiva")
-                self.distortion_scale = new_value
+                self.scale_input.setValue(new_value)
                 if hasattr(self.truss, 'displacements') and self.truss.displacements is not None:
                     self.update_plot(self.truss.displacements, self.truss.forces)
-            elif row >= 3 and row <= 6:  # Limites do gráfico
+            elif row >= 1 and row <= 4:  # Chart limits
                 xlim = list(self.ax.get_xlim())
                 ylim = list(self.ax.get_ylim())
                 
-                if row == 3:  # Início X
+                if row == 1:  # Início X
                     if new_value >= xlim[1]:
                         raise ValueError("O início X deve ser menor que o fim X")
                     xlim[0] = new_value
-                elif row == 4:  # Início Y
+                elif row == 2:  # Início Y
                     if new_value >= ylim[1]:
                         raise ValueError("O início Y deve ser menor que o fim Y")
                     ylim[0] = new_value
-                elif row == 5:  # Fim X
+                elif row == 3:  # Fim X
                     if new_value <= xlim[0]:
                         raise ValueError("O fim X deve ser maior que o início X")
                     xlim[1] = new_value
-                elif row == 6:  # Fim Y
+                elif row == 4:  # Fim Y
                     if new_value <= ylim[0]:
                         raise ValueError("O fim Y deve ser maior que o início Y")
                     ylim[1] = new_value
@@ -907,15 +917,13 @@ class TrussGUI(QMainWindow):
             QMessageBox.critical(self, "Erro", str(e))
             self.update_tables()
 
-    def update_material_properties(self):
-        """Update E and A for all elements when these values change"""
-        E = self.E_input.value()
-        A = self.A_input.value()
+    def update_distortion_scale(self):
+        """Update the distortion scale for all elements"""
+        scale = self.scale_input.value()
         
         # Update all existing elements
         for element in self.truss.elements:
-            element.E = E
-            element.A = A
+            element.distortion_scale = scale
         
         # If we have results, recalculate
         if hasattr(self.truss, 'displacements') and self.truss.displacements is not None:
@@ -945,6 +953,46 @@ class TrussGUI(QMainWindow):
         # Update the visualization
         self.update_plot()
         self.update_tables()
+
+    def on_element_edit(self, item):
+        """Manipula a edição das propriedades dos elementos"""
+        try:
+            row = item.row()
+            col = item.column()
+
+            if col not in [4, 5]:  # Apenas E e A são editáveis
+                return
+
+            try:
+                new_value = float(item.text())
+            except ValueError:
+                raise ValueError("Por favor, insira um número válido")
+
+            if new_value <= 0:
+                raise ValueError("O valor deve ser positivo")
+
+            # Atualiza o valor no elemento
+            element = self.truss.elements[row]
+            if col == 4:  # E
+                element.E = new_value
+            else:  # A
+                element.A = new_value
+
+            # Se temos resultados, recalcula
+            if hasattr(self.truss, 'displacements') and self.truss.displacements is not None:
+                try:
+                    displacements, forces = self.truss.solve()
+                    self.update_plot(displacements, forces)
+                except Exception as e:
+                    QMessageBox.critical(self, "Erro", f"Falha ao atualizar análise: {str(e)}")
+
+            # Formata o número
+            item.setText(f"{new_value:.2f}")
+            item.setTextAlignment(Qt.AlignCenter)
+
+        except Exception as e:
+            QMessageBox.critical(self, "Erro", str(e))
+            self.update_tables()
 
 if __name__ == '__main__':
     app = QApplication(sys.argv)
